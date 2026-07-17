@@ -1,47 +1,49 @@
 # Build Plan
 
+Progress: 0 / 28 tasks complete
+
 ## M1 - Foundation
 
-- [high] **M1.1** — Initialize Python project (pyproject, Click CLI skeleton, packaging) (0.5d)
-- [high] **M1.2** — Implement git range parsing and commit/diff extraction via gitpython (1d) (depends on: M1.1)
-- [high] **M1.3** — Handle edge cases: empty ranges, merge commits, invalid revs (0.5d) (depends on: M1.2)
-- [high] **M1.4** — Config layering (CLI flags > env > toml > defaults) + auth error handling (0.5d) (depends on: M1.1)
+- [ ] **M1.1** — Initialize Python project (pyproject, Click CLI skeleton, packaging) (0.5d)
+- [ ] **M1.2** — Implement git range parsing and commit/diff extraction via gitpython (1d) (depends on: M1.1)
+- [ ] **M1.3** — Handle edge cases: empty ranges, merge commits, invalid revs (0.5d) (depends on: M1.2)
+- [ ] **M1.4** — Config layering (CLI flags > env > toml > defaults) + auth error handling (0.5d) (depends on: M1.1)
 
 ## M2 - LLM Core
 
-- [high] **M2.1** — Define LLMBackend abstract interface (0.5d) (depends on: M1.1)
-- [high] **M2.2** — Implement OpenAI backend adapter (JSON mode) (0.5d) (depends on: M2.1)
-- [high] **M2.3** — Design and iterate semantic grouping prompt (1d) (depends on: M2.1, M1.2)
-- [high] **M2.4** — Preprocessor: diff normalization, truncation, token budgeting (1d) (depends on: M1.2)
-- [medium] **M2.5** — Map-reduce chunking for large commit ranges (0.5d) (depends on: M2.4, M2.3)
-- [high] **M2.6** — Parse and validate LLM structured output against JSON schema (0.5d) (depends on: M2.3)
+- [ ] **M2.1** — Define LLMBackend abstract interface (0.5d) (depends on: M1.1)
+- [ ] **M2.2** — Implement OpenAI backend adapter (JSON mode) (0.5d) (depends on: M2.1)
+- [ ] **M2.3** — Design and iterate semantic grouping prompt (1d) (depends on: M2.1, M1.2)
+- [ ] **M2.4** — Preprocessor: diff normalization, truncation, token budgeting (1d) (depends on: M1.2)
+- [ ] **M2.5** — Map-reduce chunking for large commit ranges (0.5d) (depends on: M2.4, M2.3)
+- [ ] **M2.6** — Parse and validate LLM structured output against JSON schema (0.5d) (depends on: M2.3)
 
 ## M3 - Output & Styles
 
-- [high] **M3.1** — Define canonical JSON output schema (0.5d) (depends on: M2.6)
-- [high] **M3.2** — Markdown renderer (plain-markdown style) (0.5d) (depends on: M3.1)
-- [medium] **M3.3** — Conventional-commit style renderer (0.5d) (depends on: M3.2)
-- [high] **M3.4** — Implement --style and --output flags (0.5d) (depends on: M3.2)
-- [high] **M3.5** — JSON output emission to stdout/file (0.25d) (depends on: M3.1)
+- [ ] **M3.1** — Define canonical JSON output schema (0.5d) (depends on: M2.6)
+- [ ] **M3.2** — Markdown renderer (plain-markdown style) (0.5d) (depends on: M3.1)
+- [ ] **M3.3** — Conventional-commit style renderer (0.5d) (depends on: M3.2)
+- [ ] **M3.4** — Implement --style and --output flags (0.5d) (depends on: M3.2)
+- [ ] **M3.5** — JSON output emission to stdout/file (0.25d) (depends on: M3.1)
 
 ## M4 - Polish & Ship
 
-- [high] **M4.1** — Add Anthropic backend adapter (0.5d) (depends on: M2.1)
-- [high] **M4.2** — Add Ollama (local) backend adapter (0.5d) (depends on: M2.1)
-- [high] **M4.3** — End-to-end tests on sample repos + LLM response fixtures (1d) (depends on: M3.4, M4.1)
-- [medium] **M4.4** — Error handling, retries, and rate-limit backoff (0.5d) (depends on: M2.2)
-- [high] **M4.5** — Write README, usage docs, and quickstart (0.5d) (depends on: M3.4)
-- [high] **M4.6** — Publish to PyPI (pip/pipx installable) (0.5d) (depends on: M4.3, M4.5)
+- [ ] **M4.1** — Add Anthropic backend adapter (0.5d) (depends on: M2.1)
+- [ ] **M4.2** — Add Ollama (local) backend adapter (0.5d) (depends on: M2.1)
+- [ ] **M4.3** — End-to-end tests on sample repos + LLM response fixtures (1d) (depends on: M3.4, M4.1)
+- [ ] **M4.4** — Error handling, retries, and rate-limit backoff (0.5d) (depends on: M2.2)
+- [ ] **M4.5** — Write README, usage docs, and quickstart (0.5d) (depends on: M3.4)
+- [ ] **M4.6** — Publish to PyPI (pip/pipx installable) (0.5d) (depends on: M4.3, M4.5)
 
 ## M5 - Enhancements
 
-- [medium] **M5.1** — Detect unsquashed fixup!/squash! commits and emit warnings (0.5d) (depends on: M1.2)
-- [medium] **M5.2** — LLM response caching keyed by commit hash (1d) (depends on: M2.6)
-- [medium] **M5.3** — PR description mode (--mode pr) (1d) (depends on: M3.2)
-- [low] **M5.4** — Interactive TUI review/edit via textual (3d) (depends on: M3.2)
-- [low] **M5.5** — Custom prompt templates and tone control (1d) (depends on: M2.3)
-- [low] **M5.6** — CI integration recipes (GitHub Actions / GitLab CI) (0.5d) (depends on: M4.6)
-- [low] **M5.7** — Evaluate Rust port for large-repo performance (5d) (depends on: M4.6)
+- [ ] **M5.1** — Detect unsquashed fixup!/squash! commits and emit warnings (0.5d) (depends on: M1.2)
+- [ ] **M5.2** — LLM response caching keyed by commit hash (1d) (depends on: M2.6)
+- [ ] **M5.3** — PR description mode (--mode pr) (1d) (depends on: M3.2)
+- [ ] **M5.4** — Interactive TUI review/edit via textual (3d) (depends on: M3.2)
+- [ ] **M5.5** — Custom prompt templates and tone control (1d) (depends on: M2.3)
+- [ ] **M5.6** — CI integration recipes (GitHub Actions / GitLab CI) (0.5d) (depends on: M4.6)
+- [ ] **M5.7** — Evaluate Rust port for large-repo performance (5d) (depends on: M4.6)
 
 ---
 *Generated by Hermes Agent*
