@@ -1,10 +1,10 @@
 # Build Plan
 
-Progress: 0 / 28 tasks complete
+Progress: 1 / 28 tasks complete
 
 ## M1 - Foundation
 
-- [ ] **M1.1** — Initialize Python project (pyproject, Click CLI skeleton, packaging) (0.5d)
+- [x] **M1.1** — Initialize Python project (pyproject, Click CLI skeleton, packaging) (0.5d)
 - [ ] **M1.2** — Implement git range parsing and commit/diff extraction via gitpython (1d) (depends on: M1.1)
 - [ ] **M1.3** — Handle edge cases: empty ranges, merge commits, invalid revs (0.5d) (depends on: M1.2)
 - [ ] **M1.4** — Config layering (CLI flags > env > toml > defaults) + auth error handling (0.5d) (depends on: M1.1)
