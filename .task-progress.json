@@ -2,7 +2,7 @@
   "description": "Task progression tracker for git-story. One task per day via cron job.",
   "tasks": [
     {"id": "M1.1", "milestone": "M1 - Foundation", "title": "Initialize Python project (pyproject, Click CLI skeleton, packaging)", "done": true},
-    {"id": "M1.2", "milestone": "M1 - Foundation", "title": "Implement git range parsing and commit/diff extraction via gitpython", "done": false},
+    {"id": "M1.2", "milestone": "M1 - Foundation", "title": "Implement git range parsing and commit/diff extraction via gitpython", "done": true},
     {"id": "M1.4", "milestone": "M1 - Foundation", "title": "Config layering (CLI flags > env > toml > defaults) + auth error handling", "done": false},
     {"id": "M1.3", "milestone": "M1 - Foundation", "title": "Handle edge cases: empty ranges, merge commits, invalid revs", "done": false},
     {"id": "M2.1", "milestone": "M2 - LLM Core", "title": "Define LLMBackend abstract interface", "done": false},
@@ -30,6 +30,6 @@
     {"id": "M5.6", "milestone": "M5 - Enhancements", "title": "CI integration recipes (GitHub Actions / GitLab CI)", "done": false},
     {"id": "M5.7", "milestone": "M5 - Enhancements", "title": "Evaluate Rust port for large-repo performance", "done": false}
   ],
-  "last_completed": "M1.1",
-  "current_index": 1
+  "last_completed": "M1.2",
+  "current_index": 2
 }
