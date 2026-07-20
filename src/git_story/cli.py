@@ -4,6 +4,9 @@ Usage:
     git-story <rev_range>
     git-story <rev1>..<rev2>
     git-story --version
+
+Configuration is resolved from multiple sources (lowest to highest priority):
+defaults → config file → environment variables → CLI flags.
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ import sys
 
 import click
 
+from git_story.config import resolve_config
 from git_story.git_reader import CommitsResult, get_commits_with_diffs
 
 # ── helper to format a summary line ────────────────────────────────────────
@@ -42,7 +46,7 @@ def _summarise(result: CommitsResult) -> str:
 @click.option(
     "--style",
     type=click.Choice(["plain-markdown", "conventional-commit", "json"]),
-    default="plain-markdown",
+    default=None,
     help="Output style (default: plain-markdown).",
 )
 @click.option(
@@ -57,6 +61,12 @@ def _summarise(result: CommitsResult) -> str:
     help="LLM provider backend.",
 )
 @click.option(
+    "--config",
+    type=click.Path(exists=True, dir_okay=False),
+    default=None,
+    help="Path to config file (default: search ~/.config/git-story/config.toml).",
+)
+@click.option(
     "--verbose",
     "-v",
     is_flag=True,
@@ -66,16 +76,34 @@ def _summarise(result: CommitsResult) -> str:
 def main(
     revision_range: str,
     output: str | None,
-    style: str,
+    style: str | None,
     model: str | None,
     provider: str | None,
+    config: str | None,
     verbose: bool,
 ) -> None:
     """git-story — Transform git history into PR-ready prose using LLMs.
 
     REVISION_RANGE is a git revision range like main..feature or
     v1.0..v1.1. If omitted, defaults to HEAD (last commit only).
+
+    Configuration is loaded from:
+      1. Defaults (built-in)
+      2. Config file (TOML — see --config flag)
+      3. Environment variables (GIT_STORY_*)
+      4. CLI flags (highest priority)
     """
+    # ── Resolve configuration ───────────────────────────────────────────
+    cfg = resolve_config(
+        cli_provider=provider,
+        cli_model=model,
+        cli_style=style,
+        cli_output=output,
+        cli_verbose=verbose,
+        cli_config=config,
+    )
+
+    # ── Read git history ────────────────────────────────────────────────
     try:
         result = get_commits_with_diffs(revision_range)
     except ValueError as exc:
@@ -84,7 +112,7 @@ def main(
 
     click.echo(_summarise(result))
 
-    if verbose:
+    if cfg.verbose:
         for commit in result.commits:
             click.echo("")
             click.echo(f"Commit: {commit.sha[:8]}")
@@ -92,9 +120,9 @@ def main(
             click.echo(f"Date:   {commit.authored_at.isoformat()}")
             if commit.is_merge:
                 click.echo("Merge:  yes")
-            click.echo(f"")
+            click.echo("")
             click.echo(f"    {commit.message_summary}")
-            click.echo(f"")
+            click.echo("")
             if commit.diff:
                 # Show first 20 lines of diff as a preview
                 diff_lines = commit.diff.splitlines()
