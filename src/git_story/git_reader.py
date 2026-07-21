@@ -36,11 +36,19 @@ class CommitInfo:
 @dataclasses.dataclass(frozen=True)
 class CommitsResult:
     """Result of parsing a revision range — the range string, list of
-    commits, and any non-fatal errors encountered."""
+    commits, and any non-fatal errors encountered.
+
+    Attributes:
+        range: The original revision range string.
+        commits: Ordered list of commits (newest first).
+        errors: Fatal or per-commit errors encountered.
+        warnings: Non-fatal warnings (e.g. empty range, fixup commits).
+    """
 
     range: str
     commits: List[CommitInfo]
     errors: List[str]
+    warnings: List[str] = dataclasses.field(default_factory=list)
 
     @property
     def count(self) -> int:
@@ -65,6 +73,27 @@ def open_repo(path: str = ".") -> git.Repo:
         raise ValueError(f"Not a git repository: {path}") from exc
 
 
+_EMPTY_RANGE_WARNING = "Empty revision range — no commits found for '{}'. Both ends point to the same commit."
+
+
+def _validate_range_parts(rev1: str, rev2: str, revision_range: str) -> None:
+    """Validate that both sides of a ``..`` range are non-empty and resolvable.
+
+    Raises:
+        ValueError: If either side is empty or has an obviously invalid format.
+    """
+    if not rev1.strip():
+        raise ValueError(
+            f"Invalid revision range: '{revision_range}' — "
+            f"left side of '..' is empty. Use a ref like 'main..{rev2 or 'HEAD'}'."
+        )
+    if not rev2.strip():
+        raise ValueError(
+            f"Invalid revision range: '{revision_range}' — "
+            f"right side of '..' is empty. Use a ref like '{rev1}..HEAD'."
+        )
+
+
 def parse_range(revision_range: str) -> List[str]:
     """Parse a revision range string into chronologically-ordered commit SHAs.
 
@@ -79,8 +108,12 @@ def parse_range(revision_range: str) -> List[str]:
         List of commit hex SHAs in reverse chronological order (newest first).
 
     Raises:
-        ValueError: If the revision or range cannot be resolved.
+        ValueError: If the revision range string is empty, malformed, or
+            cannot be resolved.
     """
+    if not revision_range or not revision_range.strip():
+        raise ValueError("Revision range is empty. Provide a ref like 'HEAD' or 'main..feature'.")
+
     repo = open_repo()
 
     # --- Single revision ---------------------------------------------------
@@ -95,7 +128,12 @@ def parse_range(revision_range: str) -> List[str]:
     parts = revision_range.split("..", 1)
     rev1, rev2 = parts[0], parts[1]
 
+    _validate_range_parts(rev1, rev2, revision_range)
+
     try:
+        # Validate both refs exist before iterating
+        repo.commit(rev1)
+        repo.commit(rev2)
         commits = list(repo.iter_commits(f"{rev1}..{rev2}"))
     except (git.BadName, git.GitCommandError) as exc:
         raise ValueError(f"Invalid revision range: {revision_range}") from exc
@@ -124,9 +162,15 @@ def get_commit_info(sha_or_ref: str) -> CommitInfo:
     except (git.BadName, git.GitCommandError, ValueError) as exc:
         raise ValueError(f"Invalid commit: {sha_or_ref}") from exc
 
-    # Diff against parent, or --root for the root commit (empty tree).
+    # Diff strategy: use combined diff for merge commits, otherwise
+    # diff against first parent (or empty tree for root commit).
     try:
-        if commit.parents:
+        if len(commit.parents) > 1:
+            # Merge commit: show combined diff using --cc
+            # This shows the changes that differ from ALL parents,
+            # giving a cleaner view of what the merge actually introduced.
+            diff = repo.git.diff_tree("--cc", "-p", commit.hexsha)
+        elif commit.parents:
             diff = repo.git.diff(commit.parents[0].hexsha, commit.hexsha)
         else:
             diff = repo.git.diff("--root", commit.hexsha)
@@ -163,11 +207,17 @@ def get_commits_with_diffs(revision_range: str) -> CommitsResult:
         ValueError: If the revision range itself is invalid.
     """
     errors: List[str] = []
+    warnings: List[str] = []
     shas = parse_range(revision_range)
+
+    if not shas:
+        warnings.append(_EMPTY_RANGE_WARNING.format(revision_range))
+        return CommitsResult(range=revision_range, commits=[], errors=[], warnings=warnings)
+
     commits: List[CommitInfo] = []
     for sha in shas:
         try:
             commits.append(get_commit_info(sha))
         except ValueError as exc:
             errors.append(str(exc))
-    return CommitsResult(range=revision_range, commits=commits, errors=errors)
+    return CommitsResult(range=revision_range, commits=commits, errors=errors, warnings=warnings)

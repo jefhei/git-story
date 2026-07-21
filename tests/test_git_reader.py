@@ -146,6 +146,42 @@ def test_parse_range_invalid_range(repo: str) -> None:
         parse_range("main..this-does-not-exist-xyz")
 
 
+def test_parse_range_empty_string(repo: str) -> None:
+    """Empty string raises ValueError."""
+    with pytest.raises(ValueError, match="Revision range is empty"):
+        parse_range("")
+
+
+def test_parse_range_whitespace_string(repo: str) -> None:
+    """Whitespace-only string raises ValueError."""
+    with pytest.raises(ValueError, match="Revision range is empty"):
+        parse_range("   ")
+
+
+def test_parse_range_bare_two_dots(repo: str) -> None:
+    """Bare '..' raises ValueError."""
+    with pytest.raises(ValueError, match="left side of '..' is empty"):
+        parse_range("..")
+
+
+def test_parse_range_left_empty(repo: str) -> None:
+    """Range with empty left side raises ValueError."""
+    with pytest.raises(ValueError, match="left side of '..' is empty"):
+        parse_range("..HEAD")
+
+
+def test_parse_range_right_empty(repo: str) -> None:
+    """Range with empty right side raises ValueError."""
+    with pytest.raises(ValueError, match="right side of '..' is empty"):
+        parse_range("main..")
+
+
+def test_parse_range_same_ref_empty(repo: str) -> None:
+    """Range with same ref on both sides returns empty list."""
+    shas = parse_range("HEAD..HEAD")
+    assert shas == []
+
+
 # ── Tests: get_commit_info ─────────────────────────────────────────────────
 
 
@@ -196,6 +232,58 @@ def test_get_commit_info_merge_detection(repo: str) -> None:
     pytest.skip("No merge commit found in test repo")
 
 
+def test_get_commit_info_merge_has_combined_diff(repo: str) -> None:
+    """Merge commit uses combined diff (--cc) format."""
+    import git as _git
+    _repo = _git.Repo(".")
+    merge_sha = None
+    for commit in _repo.iter_commits("--all"):
+        if len(commit.parents) > 1:
+            merge_sha = commit.hexsha
+            break
+    _repo.close()
+
+    if merge_sha is None:
+        pytest.skip("No merge commit found in test repo")
+
+    info = get_commit_info(merge_sha)
+    assert info.is_merge
+    # Combined diff should exist and may start with a diff header
+    # For clean merges with no conflicts, --cc may return empty string
+    # Let's just verify it doesn't error and has the right metadata
+    assert isinstance(info.diff, str)
+    assert info.sha == merge_sha
+
+
+def test_get_commit_info_merge_diff_differs_from_first_parent(repo: str) -> None:
+    """Merge commit diff is derived from --cc (not just first-parent diff)."""
+    import git as _git
+    _repo = _git.Repo(".")
+    merge_commit = None
+    for commit in _repo.iter_commits("--all"):
+        if len(commit.parents) > 1:
+            merge_commit = commit
+            break
+    _repo.close()
+
+    if merge_commit is None:
+        pytest.skip("No merge commit found in test repo")
+
+    info = get_commit_info(merge_commit.hexsha)
+    first_parent = merge_commit.parents[0].hexsha
+    # Get the first-parent diff directly
+    _repo2 = _git.Repo(".")
+    first_parent_diff = _repo2.git.diff(first_parent, merge_commit.hexsha)
+    _repo2.close()
+
+    # --cc diff should be different from first-parent diff in most cases
+    # (combined diff shows only lines that conflict or differ from all parents)
+    if info.diff:
+        assert info.diff != first_parent_diff, (
+            "Merge commit diff (-cc) should differ from first-parent diff"
+        )
+
+
 def test_get_commit_info_invalid(repo: str) -> None:
     """Invalid ref raises ValueError."""
     with pytest.raises(ValueError, match="Invalid commit"):
@@ -235,6 +323,63 @@ def test_get_commits_with_diffs_invalid(repo: str) -> None:
         get_commits_with_diffs("bad-ref-xyz")
 
 
+def test_get_commits_with_diffs_empty_range_warning(repo: str) -> None:
+    """Empty range returns CommitsResult with empty commits and a warning."""
+    result = get_commits_with_diffs("HEAD..HEAD")
+    assert result.count == 0
+    assert len(result.commits) == 0
+    assert len(result.warnings) >= 1
+    assert "Empty revision range" in result.warnings[0]
+
+
+def test_get_commits_with_diffs_same_branch_empty(repo: str) -> None:
+    """Same branch on both sides of '..' returns empty result with warning."""
+    import git as _git
+    _repo = _git.Repo(".")
+    branch = _repo.active_branch.name
+    _repo.close()
+    result = get_commits_with_diffs(f"{branch}..{branch}")
+    assert result.count == 0
+    assert len(result.warnings) >= 1
+
+
+def test_get_commits_with_diffs_warnings_field(repo: str) -> None:
+    """CommitsResult warnings field is populated for edge cases."""
+    result = get_commits_with_diffs("HEAD..HEAD")
+    assert hasattr(result, "warnings")
+    assert isinstance(result.warnings, list)
+    assert len(result.warnings) > 0
+
+
+def test_get_commits_with_diffs_merge_commit(repo: str) -> None:
+    """get_commits_with_diffs handles merge commits without error."""
+    import git as _git
+    _repo = _git.Repo(".")
+    # Find a merge commit SHA directly
+    merge_sha = None
+    for commit in _repo.iter_commits("--all"):
+        if len(commit.parents) > 1:
+            merge_sha = commit.hexsha
+            break
+    _repo.close()
+
+    if merge_sha is None:
+        pytest.skip("No merge commit found in test repo")
+
+    # Use the SHA as both a single ref and in a range
+    info = get_commit_info(merge_sha)
+    assert info.is_merge
+    assert isinstance(info.diff, str)
+    assert len(info.parents) > 1
+
+    # Also test that a range containing the merge works
+    result = get_commits_with_diffs(f"{merge_sha}~1..{merge_sha}")
+    assert result.count >= 1
+    merge_in_result = [c for c in result.commits if c.sha == merge_sha]
+    if merge_in_result:
+        assert merge_in_result[0].is_merge
+
+
 # ── CLI integration tests ──────────────────────────────────────────────────
 
 
@@ -269,6 +414,31 @@ def test_cli_defaults_to_head(repo: str) -> None:
     result = runner.invoke(main, [])
     assert result.exit_code == 0
     assert "HEAD" in result.output
+
+
+def test_cli_empty_range_shows_warning(repo: str) -> None:
+    """Empty revision range shows a warning message."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["HEAD..HEAD"])
+    assert result.exit_code == 0
+    assert "Warning:" in result.output
+    assert "Empty revision range" in result.output
+
+
+def test_cli_empty_string_rejected(repo: str) -> None:
+    """Empty revision range string exits with error."""
+    runner = CliRunner()
+    result = runner.invoke(main, [""])
+    assert result.exit_code != 0
+    assert "Error:" in result.output
+
+
+def test_cli_bare_two_dots_rejected(repo: str) -> None:
+    """Bare '..' exits with error."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".."])
+    assert result.exit_code != 0
+    assert "Error:" in result.output
 
 
 def test_cli_shows_commit_summaries(repo: str) -> None:

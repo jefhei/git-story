@@ -112,6 +112,10 @@ def main(
 
     click.echo(_summarise(result))
 
+    # Show any non-fatal warnings
+    for warning in result.warnings:
+        click.echo(f"Warning: {warning}", err=True)
+
     if cfg.verbose:
         for commit in result.commits:
             click.echo("")
