@@ -8,6 +8,16 @@ from git_story.git_reader import (
     get_commits_with_diffs,
     _EMPTY_RANGE_WARNING,
 )
+from git_story.llm import (
+    LLMBackend,
+    LLMError,
+    LLMAuthenticationError,
+    LLMRateLimitError,
+    LLMContextLengthError,
+    LLMRequest,
+    LLMResponse,
+    TokenUsage,
+)
 
 __version__ = "0.1.0"
 __all__ = [
@@ -20,4 +30,12 @@ __all__ = [
     "get_commits_with_diffs",
     "resolve_config",
     "_EMPTY_RANGE_WARNING",
+    "LLMBackend",
+    "LLMError",
+    "LLMAuthenticationError",
+    "LLMRateLimitError",
+    "LLMContextLengthError",
+    "LLMRequest",
+    "LLMResponse",
+    "TokenUsage",
 ]
