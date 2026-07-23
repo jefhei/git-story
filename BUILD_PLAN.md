@@ -1,6 +1,6 @@
 # Build Plan
 
-Progress: 5 / 28 tasks complete
+Progress: 6 / 28 tasks complete
 
 ## M1 - Foundation
 
@@ -12,7 +12,7 @@ Progress: 5 / 28 tasks complete
 ## M2 - LLM Core
 
 - [x] **M2.1** — Define LLMBackend abstract interface (0.5d) (depends on: M1.1)
-- [ ] **M2.2** — Implement OpenAI backend adapter (JSON mode) (0.5d) (depends on: M2.1)
+- [x] **M2.2** — Implement OpenAI backend adapter (JSON mode) (0.5d) (depends on: M2.1)
 - [ ] **M2.3** — Design and iterate semantic grouping prompt (1d) (depends on: M2.1, M1.2)
 - [ ] **M2.4** — Preprocessor: diff normalization, truncation, token budgeting (1d) (depends on: M1.2)
 - [ ] **M2.5** — Map-reduce chunking for large commit ranges (0.5d) (depends on: M2.4, M2.3)
